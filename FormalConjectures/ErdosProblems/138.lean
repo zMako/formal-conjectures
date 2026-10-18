@@ -60,7 +60,36 @@ result that allows for the definition of the van der Waerden numbers.
 -/
 @[category research solved, AMS 11]
 theorem monoAP_guarantee_set_nonempty (r k) : (monoAP_guarantee_set r k).Nonempty := by
-  sorry
+  rcases Nat.eq_zero_or_pos r with rfl | hr
+  · exact ⟨1, fun coloring => (coloring ⟨1, by simp⟩).elim0⟩
+  obtain ⟨N, hN⟩ := Combinatorics.exists_mono_arithmeticProgression k (Fin r)
+  refine ⟨N, fun coloring => ?_⟩
+  obtain ⟨a, d, ha, hd, haN, c, hc⟩ :=
+    hN fun n => if h : n ∈ Finset.Icc 1 N then coloring ⟨n, h⟩ else ⟨0, hr⟩
+  have hmem (i : ℕ) (hi : i < k) : a + i * d ∈ Finset.Icc 1 N := by
+    rw [Finset.mem_Icc]
+    exact ⟨by omega, (Nat.add_le_add_left (Nat.mul_le_mul_right d (by omega)) a).trans haN⟩
+  have himg : (fun m : Finset.Icc 1 N => m.1) '' {m | ∃ i < k, (m : ℕ) = a + i * d} =
+      (fun i => a + i * d) '' {i | i < k} := by
+    ext x
+    constructor
+    · rintro ⟨m, ⟨i, hi, hm⟩, rfl⟩
+      exact ⟨i, hi, hm.symm⟩
+    · rintro ⟨i, hi, rfl⟩
+      exact ⟨⟨a + i * d, hmem i hi⟩, ⟨i, hi, rfl⟩, rfl⟩
+  refine ⟨c, {m | ∃ i < k, (m : ℕ) = a + i * d}, ⟨a, d, ?_, ?_⟩, ?_⟩
+  · change Set.encard _ = _
+    erw [himg, Set.InjOn.encard_image, Set.Nat.encard_range]
+    intro i _ j _ hij
+    exact Nat.eq_of_mul_eq_mul_right hd (by simpa using hij)
+  · erw [himg]
+    ext x
+    simp [smul_eq_mul]
+  · rintro m ⟨i, hi, hm⟩
+    have h := hc i hi
+    rw [dif_pos (hmem i hi)] at h
+    convert h using 2
+    exact Subtype.ext hm
 
 /--
 The **van der Waerden number**, is the smallest integer `N` such that any `r`-coloring of
